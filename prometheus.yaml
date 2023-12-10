@@ -23,14 +23,11 @@ scrape_configs:
     - targets: ['172.31.12.178:9100','172.31.64.16:9100','172.31.64.14:9100']
     metric_relabel_configs:
       - source_labels: ['nodename']
-        regex: '(loki.aster)'
+        regex: '(loki.master)'
         target_label: nodename
         replacement: appz-${1}
       - source_labels: ['nodename']
-        regex: 'loki.worker.node-.(.*)'
-        target_label: nodename
-        replacement: appz-dev-worker-${1}
-  
+        regex: 'k8s.(.*)'  
   - job_name: 'kube-state-metrics'
     static_configs:
     - targets: ['kube-state-metrics.kube-system.svc.cluster.local:8080']
