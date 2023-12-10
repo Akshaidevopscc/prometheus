@@ -29,7 +29,7 @@ scrape_configs:
         target_label: nodename
         replacement: appz-${1}
       - source_labels: ['nodename']
-        regex: 'k8s.(.*)'  
+        regex: 'loki.(.*)'  
   - job_name: 'kube-state-metrics'
     static_configs:
     - targets: ['kube-state-metrics.kube-system.svc.cluster.local:8080']
