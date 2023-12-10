@@ -5,12 +5,6 @@ global:
   # scrape_timeout is set to the global default (10s).
 
 # Alertmanager configuration
-#alerting:
-  alertmanagers:
-  - static_configs:
-    - targets:
-       - mbk-alertmanager-0-2:9093
-
 # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
 rule_files:
    - /opt/bitnami/prometheus/conf/rules.yaml 
@@ -57,7 +51,3 @@ scrape_configs:
       regex: (.+)
       target_label: __metrics_path__
       replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
-      target_label: __metrics_path__
-      replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
-      
- 
