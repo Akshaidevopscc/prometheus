@@ -3,37 +3,215 @@ global:
   scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
   evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
   # scrape_timeout is set to the global default (10s).
-  external_labels:
-    datacenter: primary
-
 # Alertmanager configuration
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      # - alertmanager:9093
+       - 192.168.99.102:9093
 # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
 rule_files:
-   - /opt/bitnami/prometheus/conf/rules.yaml 
+   - /opt/bitnami/prometheus/conf/rules.yaml
    - /opt/bitnami/prometheus/conf/alerts.yaml
-
 # A scrape configuration containing exactly one endpoint to scrape:
 # Here it's Prometheus itself.
 scrape_configs:
   # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
   - job_name: 'prometheus'
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
     static_configs:
     - targets: ['localhost:9090']
-  
-  - job_name: 'node-exporter'
+  - job_name: 'nginx'
+    kubernetes_sd_configs:
+    - role: endpoints
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_namespace]
+      action: replace
+      target_label: namespace
+    - source_labels: [__meta_kubernetes_pod_name]
+      action: replace
+      target_label: pod
+    - source_labels: [pod]
+      regex: nginx.*
+      action: keep
+    - source_labels: [__address__]
+      target_label: __address__
+      regex: '([^:]+)(:[80]+)?'
+      replacement: '${1}'
+      action: drop
+    - source_labels: [__address__]
+      regex: '.*'
+      target_label: instance
+      replacement: 'AppZ${1}'
+  - job_name: 'cassandra'
+    kubernetes_sd_configs:
+    - role: endpoints
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_namespace]
+      action: replace
+      target_label: namespace
+    - source_labels: [__meta_kubernetes_pod_name]
+      action: replace
+      target_label: pod
+    - source_labels: [pod]
+      regex: cassandra.*
+      action: keep
+    - source_labels: [__address__]
+      regex: '.*'
+      target_label: instance
+      replacement: 'AppZ${1}'
+  - job_name: 'httpd'
     static_configs:
-    - targets: ['172.31.12.178:9100','172.31.64.16:9100','172.31.64.14:9100']
+            - targets: ['192.168.50.165:9117']
+  - job_name: 'dotnet_exporter'
+    kubernetes_sd_configs:
+    - role: endpoints
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_namespace]
+      action: replace
+      target_label: namespace
+    - source_labels: [__meta_kubernetes_pod_name]
+      action: replace
+      target_label: pod
+    - source_labels: [pod]
+      regex: '((.*)dotnet(.*))'
+      action: keep
+    - source_labels: [__address__]
+      regex: '.*'
+      target_label: instance
+      replacement: 'AppZ${1}'
+  - job_name: 'node_exporter'
+    static_configs:
+            - targets: ['172.31.12.178:9100','172.31.64.14:9100','172.31.64.16:9100']
     metric_relabel_configs:
       - source_labels: ['nodename']
-        regex: '(loki.master)'
+        regex: 'ubuntu'
         target_label: nodename
-        replacement: appz-${1}
-      - source_labels: ['nodename']
-        regex: 'loki.(.*)'  
+        replacement: node01
+  - job_name: 'mongodb_exporter'
+    kubernetes_sd_configs:
+    - role: endpoints
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_namespace]
+      action: replace
+      target_label: namespace
+    - source_labels: [__meta_kubernetes_pod_name]
+      action: replace
+      target_label: pod
+    - source_labels: [pod]
+      regex: '((.*)mongodb(.*))'
+      action: keep
+    - source_labels: [__address__]
+      target_label: __address__
+      regex: '([^:]+)(:[27017]+)?'
+      replacement: '${1}'
+      action: drop
+    - source_labels: [__address__]
+      regex: '.*'
+      target_label: instance
+      replacement: 'AppZ${1}'
+  - job_name: 'rabbitmq_exporter'
+    static_configs:
+            - targets: ['rabbitmq:15692']
+  - job_name: 'redis'
+    kubernetes_sd_configs:
+    - role: endpoints
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_namespace]
+      action: replace
+      target_label: namespace
+    - source_labels: [__meta_kubernetes_pod_name]
+      action: replace
+      target_label: pod
+    - source_labels: [pod]
+      regex: redis.*
+      action: keep
+    - source_labels: [__address__]
+      target_label: __address__
+      regex: '([^:]+)(:[6379]+)?'
+      replacement: '${1}'
+      action: drop
+    - source_labels: [__address__]
+      regex: '.*'
+      target_label: instance
+      replacement: 'AppZ${1}'
+  - job_name: 'mysql'
+    kubernetes_sd_configs:
+    - role: endpoints
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_namespace]
+      action: replace
+      target_label: namespace
+    - source_labels: [__meta_kubernetes_pod_name]
+      action: replace
+      target_label: pod
+    - source_labels: [pod]
+      regex: mysql-5-7.*|mariadb-master-10-4.*
+      action: keep
+    - source_labels: [__address__]
+      target_label: __address__
+      regex: '([^:]+)(:[3306]+)?'
+      replacement: '${1}'
+      action: drop
+    - source_labels: [__address__]
+      regex: '.*'
+      target_label: instance
+      replacement: 'AppZ${1}'
+  - job_name: 'nodejs'
+    kubernetes_sd_configs:
+    - role: endpoints
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_namespace]
+      action: replace
+      target_label: namespace
+    - source_labels: [__meta_kubernetes_pod_name]
+      action: replace
+      target_label: pod
+    - source_labels: [pod]
+      regex: '((.*)hellonode(.*))'
+      action: keep
+    - source_labels: [__address__]
+      target_label: __address__
+      regex: '([^:]+)(:[3000]+)?'
+      #regex: '([^:]+)(:[80]+)?'
+      replacement: '${1}'
+      action: drop
+    - source_labels: [__address__]
+      target_label: __address__
+      regex: '(.*):80'
+      replacement: '${1}'
+      action: drop
+    - source_labels: [__address__]
+      regex: '.*'
+      target_label: instance
+      replacement: 'Appz${1}'
+  - job_name: 'postgres_exporter'
+    kubernetes_sd_configs:
+    - role: endpoints
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_namespace]
+      action: replace
+      target_label: namespace
+    - source_labels: [__meta_kubernetes_pod_name]
+      action: replace
+      target_label: pod
+    - source_labels: [pod]
+      regex: postgres-ha-13.*
+      action: keep
+    - source_labels: [__address__]
+      target_label: __address__
+      regex: '([^:]+)(:[5432]+)?'
+      replacement: '${1}'
+      action: drop
+    - source_labels: [__address__]
+      regex: '.*'
+      target_label: instance
+      replacement: 'Appz${1}'
   - job_name: 'kube-state-metrics'
     static_configs:
     - targets: ['kube-state-metrics.kube-system.svc.cluster.local:8080']
-
   - job_name: 'kubernetes-cadvisor'
     scheme: https
     tls_config:
@@ -50,3 +228,33 @@ scrape_configs:
       regex: (.+)
       target_label: __metrics_path__
       replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+  - job_name: 'yace'
+    scrape_interval: 60s
+    static_configs:
+    - targets: ['172.31.17.93:5000']
+  - job_name: 'jmeter'
+    static_configs:
+    - targets: ['192.168.50.133:9270']
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+     module: [http_2xx]
+    static_configs:
+    - targets:
+       - https://mushraf6461-dev-nginx-1-2.038c839d.lowtouch.cloud/
+       -  https://mushraf6461-dev-tomcat-loadgen-0-3.038c839d.lowtouch.cloud/
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter-0-2:9115
+  - job_name: 'tower'
+    metrics_path: /api/v2/metrics
+    scrape_interval: 5s
+    scheme: https
+    bearer_token: iH7m8NMJHqPoWQd5Z4va4Fnj6kfJjA #Token
+    static_configs:
+    - targets:
+       - nagesh-dev-awx-20.32d430c5.lowtouch.cloud
