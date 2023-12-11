@@ -1,14 +1,15 @@
 # my global config
 global:
-  scrape_interval:     15s
-  evaluation_interval: 15s
+  scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
 
 # Alertmanager configuration
 alerting:
   alertmanagers:
   - static_configs:
     - targets:
-       - alert-manager-0-2:9093
+       - mbk-alertmanager-0-2:9093
 
 # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
 rule_files:
@@ -18,36 +19,24 @@ rule_files:
 # A scrape configuration containing exactly one endpoint to scrape:
 # Here it's Prometheus itself.
 scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
   - job_name: 'prometheus'
     static_configs:
     - targets: ['localhost:9090']
   
-  - job_name: 'graylog'
-    scrape_interval: 15s
-    metrics_path: '/api/plugins/org.graylog.plugins.metrics.prometheus/metrics'
-    basic_auth:
-      username: admin
-      password: 4FTZOx9ACdbAw65WJH1u
-    static_configs:
-      - targets: ['appz.1276c99e.lowtouch.cloud:443/logs.alpha-dev/']
-
   - job_name: 'node-exporter'
     static_configs:
-    - targets: ['172.31.12.178:9100', '172.31.64.16:9100', '172.31.64.14:9100']
+    - targets: ['172.31.12.178:9100','172.31.64.16:9100','172.31.64.14:9100']
     metric_relabel_configs:
       - source_labels: ['nodename']
-        regex: 'loki-master'
+        regex: '(loki.master)'
         target_label: nodename
-        replacement: loki-master
+        replacement: appz-${1}
       - source_labels: ['nodename']
-        regex: 'loki-worker-node-1'
+        regex: 'loki.worker.node-.(.*)'
         target_label: nodename
-        replacement: loki-worker-node-1
-      - source_labels: ['nodename']
-        regex: 'loki-worker-node-0'
-        target_label: nodename
-        replacement: loki-worker-node-0
-
+        replacement: appz-dev-worker-${1}
+  
   - job_name: 'kube-state-metrics'
     static_configs:
     - targets: ['kube-state-metrics.kube-system.svc.cluster.local:8080']
