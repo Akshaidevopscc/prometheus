@@ -29,11 +29,11 @@ scrape_configs:
     - targets: ['172.31.7.65:9100','172.31.64.11:9100','172.31.64.5:9100']
     metric_relabel_configs:
       - source_labels: ['nodename']
-        regex: '(odin.master)'
+        regex: '(micro.master)'
         target_label: nodename
         replacement: appz-${1}
       - source_labels: ['nodename']
-        regex: 'odin.worker.node-.(.*)'
+        regex: 'micro.worker.node-.(.*)'
         target_label: nodename
         replacement: appz-dev-worker-${1}
   
